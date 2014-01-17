@@ -20,6 +20,8 @@ require.config
     underscore: '../bower_components/underscore/underscore'
     bootstrap: '../bower_components/sass-bootstrap/dist/js/bootstrap'
 
-require ['app'], (App) ->
-  app = new App()
-  app.initialize()
+require ['app'], (SuperTable) ->
+  table = new SuperTable()
+  table.initialize
+    url: 'http://localhost:9000/lorem.html'
+    el:  '#table-container'
