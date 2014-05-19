@@ -23,7 +23,6 @@ define [
   emptyTableTemplate,
   sortTemplate ) ->
   class TableView extends Backbone.View
-    el: '@table-container'
     events:
       'click [data-href]': '_onClickDataHref'
 
@@ -37,7 +36,7 @@ define [
       else
         window.location.href = data
 
-    initialize: ->
+    constructor: (options) ->
       @tableDefaults =
         columnWidth: 120
         columnMinWidth: 40
@@ -48,10 +47,13 @@ define [
         extraWidth: 100 # to be able to widen last column
         scrollBarWidth: null
 
-      @app = @options.app
+      @app = options.app
+      @model = options.model
       @log = @app.log
-      @listenTo @options.app, 'page:loading', @_startSpinner
-      @listenTo @options.app, 'page:loaded', @_stopSpinner
+      @$el = options.$container.find('.table-container');
+      @el = @$el.get(0)
+      @listenTo options.app, 'page:loading', @_startSpinner
+      @listenTo options.app, 'page:loaded', @_stopSpinner
       @listenTo @model, 'change', (model) =>
         @render() if model.changed.data
 
@@ -147,10 +149,10 @@ define [
         @tableLeftViewport.scrollTop = scrollTop
 
         if (scrollTop + @tableRightViewport.clientHeight) >= @tableRightViewport.scrollHeight
-          @options.app.trigger 'scroll:bottom'
+          @app.trigger 'scroll:bottom'
           @_hitBottom = true
         else if @_hitBottom
-          @options.app.trigger 'scroll'
+          @app.trigger 'scroll'
           @_hitBottom = false
 
     _renderContainer: (data) =>
@@ -199,7 +201,7 @@ define [
         tr.setAttribute 'data-row-index', ind + offset
 
     _assignExtensions: (container) =>
-      options = { app: @options.app, model: @model, container: container }
+      options = { app: @app, model: @model, container: container }
       sort: new Sorting options
       resize: new ResizingGrid options
       reorder: new ColumnReordering options, @tableRightViewport
