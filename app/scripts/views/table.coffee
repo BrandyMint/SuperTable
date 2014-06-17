@@ -44,8 +44,9 @@ define [
         rowHeight: 28
         width: 0
         height: 0
-        extraWidth: 100 # to be able to widen last column
+        extraWidth: 0 # to be able to widen last column
         scrollBarWidth: null
+        min_height: 100
 
       @app = @options.app
       @log = @app.log
@@ -64,8 +65,12 @@ define [
         return unless @tableContainer
         @tableContainer.style.width = '0px'
         @tableContainer.style.height = '0px'
+        @$el.width(0)
+        @$el.height(0)
+        document.body.style.overflow = 'auto'
         @_setPanesSize()), 300)
-      $(window).resize debounceSize
+      $(window).on 'resize', (=> document.body.style.overflow = 'hidden')
+      $(window).on 'resize', debounceSize
 
     render: ->
       @log 'render'
@@ -189,6 +194,7 @@ define [
         @_onScroll())
 
       @_tableRendered = true
+      @_tables = tables
       @_setPanesSize()
       @_stopSpinner()
 
@@ -213,8 +219,30 @@ define [
     _startSpinner: =>
       @$el.spin(true)
 
+    _viewportHeight: =>
+      Math.max(document.documentElement.clientHeight, window.innerHeight || 0)
+
+    _getContainerHeight: (tables) =>
+
+      header_height = $(tables.top.right).height()
+      body_height = $(tables.bottom.right).height()
+      scroll_width = @_scrollBarWidth()
+      expanded_table_height = header_height + body_height + scroll_width
+      fit_page_height = @_viewportHeight() - @$el.position().top
+      fit_page_height -= @$el.css("padding-top").replace("px", "")
+      fit_page_height -= @$el.css("padding-bottom").replace("px", "");
+
+      min_height = @tableDefaults.min_height + scroll_width
+
+      return expanded_table_height if expanded_table_height < fit_page_height
+      return fit_page_height if fit_page_height > min_height
+      return expanded_table_height
+
     _setPanesSize: =>
+
       @containerWidth = @$el.width()
+
+      @$el.height(@_getContainerHeight(@_tables))
       @containerHeight = @$el.height()
 
       @log 'set panes size'
@@ -249,6 +277,8 @@ define [
       @tableRightViewport.style.left = "#{@leftWidth}px"
       @tableRightViewport.style.width = "#{rightPaneWidth}px"
       @tableRightViewport.style.height = "#{paneHeight}px"
+      if !@model.get('fix_columns')
+        @tableRightViewport.style.overflowX = "auto"
 
     _scrollBarWidth: =>
       return @tableDefaults.scrollBarWidth if @tableDefaults.scrollBarWidth != null
